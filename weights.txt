@@ -1,0 +1,2 @@
+# YOLO26 세그멘테이션 모델(yolo26n-seg.pt, yolo26s-seg.pt, yolo26m-seg.pt, yolo26l-seg.pt, yolo26x-seg.pt)은 처음 사용할 때 Ultralytics가 공식 배포처에서 가중치 폴더로 받습니다.
+# SAM3 모델(facebook/sam3)은 처음 사용할 때 Hugging Face 캐시에 받습니다. 모델 접근 승인을 받은 계정의 HF_TOKEN이 필요합니다.
