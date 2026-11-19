@@ -66,6 +66,8 @@ def _mgr(caps: dict[str, FakeCapture]) -> StreamManager:
     m._results_lock = threading.Lock()
     m._tune_requested = False
     m._last_drop_count = 0
+    m._unreported_drops = 0
+    m._next_autotune_log_at = 0.0
     m._last_adaptive_drop_count = 0
     m._gpu_util_target = 1.0
     m._util_scale = 1.0
@@ -108,6 +110,34 @@ def test_autotune_uses_measured_capacity_and_camera_fps():
     for cap in caps.values():
         assert cap.interval == pytest.approx(1.0 / (budget / 2.0))
     assert sum(1.0 / cap.interval for cap in caps.values()) == pytest.approx(budget)
+
+
+def test_autotune_logs_drop_totals_and_latest_cadence_every_minute(monkeypatch, caplog):
+    cap = FakeCapture()
+    m = _mgr({"cam": cap})
+    stats = {"dropped": 0}
+    monkeypatch.setattr(m._worker, "get_queue_stats", lambda: stats)
+    monkeypatch.setattr(manager_mod.time, "monotonic", lambda: now)
+    caplog.set_level("DEBUG", logger=manager_mod.logger.name)
+
+    # The worker counter resets mid-window. Earlier drops still count in the report.
+    for now, count, warnings, level in [
+        (0, 2, [2], "INFO"),
+        (1, 4, [], "DEBUG"),
+        (2, 0, [], "DEBUG"),
+        (59.9, 3, [], "DEBUG"),
+        (60, 3, [5], "INFO"),
+        (120, 3, [], "INFO"),
+    ]:
+        caplog.clear()
+        stats["dropped"] = count
+        cap.source_fps = 15.0 if now >= 60 else 30.0
+        assert m._run_autotune() is True
+        assert m._last_drop_count == count
+        assert [r.args[0] for r in caplog.records if r.levelname == "WARNING"] == warnings
+        cadence = [r for r in caplog.records if r.message.startswith("cadence autotune:")]
+        assert [r.levelname for r in cadence] == [level]
+        assert f"demand={cap.source_fps:.1f}/s" in cadence[0].message
 
 
 def test_gpu_ceiling_scales_final_cadence_without_triggering_imgsz_downshift():

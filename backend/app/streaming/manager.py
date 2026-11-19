@@ -226,6 +226,8 @@ class StreamManager:
         self._source_telemetry: dict[str, SourceTelemetry] = {}
         self._telemetry_lock = threading.Lock()
         self._last_drop_count = 0
+        self._unreported_drops = 0
+        self._next_autotune_log_at = 0.0
         self._gpu_util_target = GPU_UTIL_TARGET_DEFAULT
         self._util_scale = 1.0
         self._source_imgsz: dict[str, int] = {}
@@ -650,15 +652,22 @@ class StreamManager:
                 effective_floor,
             )
 
-        if drops > self._last_drop_count:
-            logger.warning(
-                "autotune queue drop 증가: +%d (capacity=%.1f/s, budget=%.1f/s)",
-                drops - self._last_drop_count,
-                capacity,
-                budget,
-            )
+        self._unreported_drops += max(0, drops - self._last_drop_count)
         self._last_drop_count = drops
-        logger.info(
+        now = time.monotonic()
+        report_due = now >= self._next_autotune_log_at
+        if report_due:
+            self._next_autotune_log_at = now + 60.0
+            if self._unreported_drops:
+                logger.warning(
+                    "autotune queue drop: +%d since last report (capacity=%.1f/s, budget=%.1f/s)",
+                    self._unreported_drops,
+                    capacity,
+                    budget,
+                )
+                self._unreported_drops = 0
+        logger.log(
+            logging.INFO if report_due else logging.DEBUG,
             "cadence autotune: active=%d unknown=%d capacity=%.1f/s duty=%.2f "
             "target=%.2f scale=%.2f budget=%.1f/s demand=%.1f/s",
             len(active),
