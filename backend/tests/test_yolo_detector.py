@@ -89,12 +89,24 @@ def test_detector_converts_person_boxes_scores_and_largest_mask_contour(monkeypa
                 "conf": 0.5,
                 "device": "cuda:0",
                 "half": True,
-                "imgsz": 560,
+                "imgsz": 576,
                 "retina_masks": True,
                 "verbose": False,
             },
         )
     ]
+
+
+@pytest.mark.parametrize("configured,expected", [(560, 576), (480, 480), (576, 576), (640, 640)])
+def test_detector_aligns_configured_size_to_yolo_stride(monkeypatch, configured, expected):
+    model = _FakeModel([])
+    monkeypatch.setattr(detector_module, "_load_yolo_model", lambda _: model)
+    monkeypatch.setattr(detector_module.app_config, "TRACKER_INPUT_SIZE", configured)
+    detector = YoloSegDetector("yolo26n-seg.pt", "cpu")
+
+    detector.detect(np.zeros((8, 8, 3), dtype=np.uint8))
+
+    assert model.calls[0][1]["imgsz"] == expected
 
 
 def test_detector_keeps_person_box_when_mask_is_missing(monkeypatch):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from math import ceil
 from pickle import UnpicklingError
 from typing import Any
 from zipfile import is_zipfile
@@ -65,7 +66,9 @@ class YoloSegDetector:
         self.conf = float(
             conf if conf is not None else (os.getenv("DETECTOR_CONF") or 0.5)
         )
-        self.imgsz = int(imgsz or app_config.TRACKER_INPUT_SIZE)
+        requested_size = int(imgsz or app_config.TRACKER_INPUT_SIZE)
+        # All allowlisted YOLO26 segmentation models have a maximum stride of 32.
+        self.imgsz = ceil(requested_size / 32) * 32
         self.model = _load_yolo_model(model_path)
 
     def detect(self, frame_bgr: np.ndarray) -> list[Detection]:
