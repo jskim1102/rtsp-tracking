@@ -16,6 +16,7 @@ services:
     image: ghcr.io/jskim1102/rtsp-tracking-backend:latest
     container_name: rtsp-tracking-backend
     environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       # 누락 패키지를 런타임에 pip 설치하지 않는다. requirements.txt 가 유일한 의존성 정본이다.
       YOLO_AUTOINSTALL: "false"
       YOLO_WEIGHTS_DIR: /app/models

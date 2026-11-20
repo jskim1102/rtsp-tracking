@@ -63,9 +63,7 @@ class YoloSegDetector:
     ) -> None:
         model_path = models_dir.resolve_model_path(model_name)
         self.device = _auto_device(str(device or ""))
-        self.conf = float(
-            conf if conf is not None else (os.getenv("DETECTOR_CONF") or 0.5)
-        )
+        self.conf = float(conf if conf is not None else app_config.DETECTOR_CONF)
         requested_size = int(imgsz or app_config.TRACKER_INPUT_SIZE)
         # All allowlisted YOLO26 segmentation models have a maximum stride of 32.
         self.imgsz = ceil(requested_size / 32) * 32

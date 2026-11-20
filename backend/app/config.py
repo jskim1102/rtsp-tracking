@@ -51,6 +51,22 @@ def _env_int(name: str, default: int, *, minimum: int, maximum: int) -> tuple[in
     return clamped, warning
 
 
+def _env_float(name: str, default: float, *, minimum: float, maximum: float) -> tuple[float, str | None]:
+    """실수 env를 import-safe하게 파싱하고 허용 범위로 제한한다 (_env_int 와 같은 꼴)."""
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default, None
+    try:
+        parsed = float(raw)
+    except ValueError:
+        return default, f"{name}={raw!r} 가 숫자가 아니라 기본값 {default} 로 폴백"
+    clamped = max(minimum, min(maximum, parsed))
+    warning = None
+    if clamped != parsed:
+        warning = f"{name}={parsed} → {clamped} 로 보정됨 (허용 범위: {minimum}~{maximum})"
+    return clamped, warning
+
+
 def _env_bool(name: str, default: bool) -> tuple[bool, str | None]:
     raw = os.getenv(name)
     if raw is None or raw == "":
@@ -90,6 +106,8 @@ TRACKER_MAX_VISION_FEATURES_CACHE_SIZE, _tracker_cache_warn = _env_int(
 TRACKER_PENDING_SOURCES_MAX, _tracker_pending_warn = _env_int(
     "TRACKER_PENDING_SOURCES_MAX", 64, minimum=1, maximum=64
 )
+# YOLO 추적기(yolo-botsort · yolo-bytetrack)의 검출 신뢰도 — 숫자가 아니면 기본값으로 (전에는 float() 가 바로 터졌다)
+DETECTOR_CONF, _detector_conf_warn = _env_float("DETECTOR_CONF", 0.5, minimum=0.0, maximum=1.0)
 # 갤러리는 process-local 상태이므로 기본 저장소는 임시 디렉토리다. 운영자가
 # 명시한 디스크를 쓰고 싶을 때만 TRACK_GALLERY_DIR로 바꾼다.
 TRACK_GALLERY_DIR: str = os.getenv("TRACK_GALLERY_DIR") or ""
@@ -149,6 +167,7 @@ for _w in (
     _tracker_recondition_warn,
     _tracker_cache_warn,
     _tracker_pending_warn,
+    _detector_conf_warn,
     _track_gallery_max_warn,
 ):
     if _w:

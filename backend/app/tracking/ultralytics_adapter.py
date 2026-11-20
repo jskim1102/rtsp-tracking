@@ -222,8 +222,7 @@ class UltralyticsTrackerAdapter:
                 ),
                 conf=float(
                     self._config.get("detector_conf")
-                    or os.getenv("DETECTOR_CONF")
-                    or 0.5
+                    or app_config.DETECTOR_CONF
                 ),
                 imgsz=int(
                     self._config.get("input_size")

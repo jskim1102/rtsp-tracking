@@ -76,3 +76,10 @@ def test_empty_tracker_checkpoint_uses_the_transformers_compatible_repository(
     config = _reload_config(monkeypatch, TRACKER_CHECKPOINT="")
 
     assert config.TRACKER_CHECKPOINT == "facebook/sam3"
+
+
+def test_detector_conf_falls_back_and_clamps(monkeypatch):
+    """DETECTOR_CONF 가 숫자가 아니면 기본 0.5, 범위 밖이면 0~1 로 — 전에는 float() 가 YOLO 추적기를 만들 때 터졌다."""
+    assert _reload_config(monkeypatch, DETECTOR_CONF="abc").DETECTOR_CONF == 0.5
+    assert _reload_config(monkeypatch, DETECTOR_CONF="1.7").DETECTOR_CONF == 1.0
+    assert _reload_config(monkeypatch, DETECTOR_CONF="0.3").DETECTOR_CONF == 0.3
