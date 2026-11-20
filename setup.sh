@@ -135,7 +135,8 @@ step "설정 검사"
 docker compose config -q || die ".env 파일의 설정을 확인한 뒤 다시 실행하세요."
 
 step "MediaMTX와 추론 서버 준비"
-docker compose pull --policy missing mediamtx || die "MediaMTX 이미지를 받지 못했어요. 인터넷 연결을 확인하세요."
+# --policy 는 Compose 2.22 부터 — 그 전 버전은 이 옵션을 몰라 실패하므로 그때는 그냥 받는다
+docker compose pull --policy missing mediamtx || docker compose pull mediamtx || die "MediaMTX 이미지를 받지 못했어요. 인터넷 연결을 확인하세요."
 if ! docker compose pull backend; then
   warn "추론 서버 이미지를 받을 수 없어 이 PC에서 만듭니다. 처음에는 시간이 걸릴 수 있어요."
   docker compose build backend || die "추론 서버 이미지를 만들지 못했어요."
