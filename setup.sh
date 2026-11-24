@@ -137,10 +137,8 @@ docker compose config -q || die ".env 파일의 설정을 확인한 뒤 다시 �
 step "MediaMTX와 추론 서버 준비"
 # --policy 는 Compose 2.22 부터 — 그 전 버전은 이 옵션을 몰라 실패하므로 그때는 그냥 받는다
 docker compose pull --policy missing mediamtx || docker compose pull mediamtx || die "MediaMTX 이미지를 받지 못했어요. 인터넷 연결을 확인하세요."
-if ! docker compose pull backend; then
-  warn "추론 서버 이미지를 받을 수 없어 이 PC에서 만듭니다. 처음에는 시간이 걸릴 수 있어요."
-  docker compose build backend || die "추론 서버 이미지를 만들지 못했어요."
-fi
+ok "추론 서버 이미지를 이 PC에서 만듭니다. 처음에는 시간이 걸릴 수 있어요."
+docker compose build backend || die "추론 서버 이미지를 만들지 못했어요."
 ok "추적 모델은 처음 사용할 때 받습니다."
 
 step "시청 화면 만들기"
@@ -149,7 +147,7 @@ docker compose build frontend || die "시청 화면을 만들지 못했어요."
 step "추론 장치 확인"
 # 설치한 추론 이미지에서 CUDA를 확인해야 Docker가 접근할 수 있는 GPU만 선택한다.
 if docker run --rm --network none --pull never --gpus all --entrypoint python \
-    ghcr.io/jskim1102/rtsp-tracking-backend:latest \
+    rtsp-tracking-backend:latest \
     -c 'import sys, torch; sys.exit(not torch.cuda.is_available())' >/dev/null 2>&1; then
   env_set COMPOSE_PATH_SEPARATOR ":"
   env_set COMPOSE_FILE "docker-compose.yml:docker-compose.gpu.yml"

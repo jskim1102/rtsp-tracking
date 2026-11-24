@@ -8,12 +8,13 @@
 #          설치 스크립트가 .env.example로 .env를 만든다.
 # 브라우저 접속: http://<서버IP>:${FRONTEND_PORT}  (frontend)
 
+name: rtsp-tracking
+
 services:
   # ─────────────────────────────── Backend ───────────────────────────────
   backend:
     build:
       context: ./backend
-    image: ghcr.io/jskim1102/rtsp-tracking-backend:latest
     container_name: rtsp-tracking-backend
     environment:
       CORS_ORIGINS: ${CORS_ORIGINS:-}
